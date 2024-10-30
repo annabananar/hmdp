@@ -6,6 +6,7 @@
 --- 1. 参数列表：优惠券id + 用户id
 local voucher_id = ARGV[1]
 local user_id = ARGV[2]
+local order_id = ARGV[3]
 
 -- 2. 业务逻辑：判断库存是否充足 + 判断用户是否下单
 local stockKey = 'seckill:stock:' .. voucher_id
@@ -22,4 +23,6 @@ end
 -- 扣库存，下单，保存用户到秒杀券所在集合
 redis.call('incrby', stockKey, -1)
 redis.call('sadd', orderKey, user_id)
+-- 添加订单信息到stream消息队列， 方便之后异步向数据库添加订单
+redis.call('xadd', stream.orders, '*', 'userId', user_id, 'voucherId', voucher_id, 'id', order_id)
 return 0
